@@ -21,14 +21,17 @@ The project aims to familiarize with the Volley library and compare its pros and
 - Easy to use and setup.
 - Manages network requests and responses efficiently.
 - Built-in request queuing and prioritization.
+
 *Cons of Volley:*
 - Less flexible for complex APIs.
 - Manual parsing of JSON responses is required.
 - No built-in support for converting JSON to Java/Kotlin objects.
+
 *Pros of Retrofit:*
 - Easy to parse JSON responses into Java/Kotlin objects using converters.
 - Supports various data formats and converters (e.g., Gson, Moshi).
 - Easy to handle errors and retry mechanisms.
+
 *Cons of Retrofit:*
 - Slightly steeper learning curve compared to Volley.
 - Requires additional dependencies for converters.
