@@ -16,6 +16,7 @@ The project aims to familiarize with the Volley library and compare its pros and
 - View the current weather details including temperature, humidity, and wind speed.
 
 #**Comparison: Volley vs Retrofit**
+
 *Pros of Volley:*
 - Easy to use and setup.
 - Manages network requests and responses efficiently.
