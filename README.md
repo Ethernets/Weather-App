@@ -38,4 +38,4 @@ The project aims to familiarize with the Volley library and compare its pros and
 
 #**Screenshots**
 ### Home Screen
-![Home Screen](screenshots/img.png)
+![Home Screen](screenshots/imgMain.png)
