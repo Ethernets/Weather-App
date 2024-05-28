@@ -1,6 +1,13 @@
 package com.example.weatherapp.fragments
 
+import android.Manifest
+import android.content.Context.LOCATION_SERVICE
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.os.Bundle
+import android.os.Looper
+import android.provider.Settings
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -9,16 +16,26 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
 import androidx.fragment.app.activityViewModels
 import com.android.volley.Request
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.example.weatherapp.Constants
+import com.example.weatherapp.DialogManager
 import com.example.weatherapp.MainViewModel
 import com.example.weatherapp.R
 import com.example.weatherapp.adapters.ViewPagerAdapter
 import com.example.weatherapp.databinding.FragmentMainBinding
 import com.example.weatherapp.models.WeatherModel
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
+import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import com.squareup.picasso.Picasso
 import org.json.JSONObject
@@ -26,6 +43,8 @@ import org.json.JSONObject
 class MainFragment : Fragment() {
     private lateinit var pLauncher: ActivityResultLauncher<String>
     private lateinit var binding: FragmentMainBinding
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var locationCallback: LocationCallback
     private val model: MainViewModel by activityViewModels()
 
     override fun onCreateView(
@@ -40,8 +59,12 @@ class MainFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         checkPermission()
         initViewPager()
-        requestWeatherData("London")
         updateCurrentCard()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        checkLocation()
     }
 
     private fun initViewPager(){
@@ -55,6 +78,58 @@ class MainFragment : Fragment() {
                 1 -> tab.text = "Days"
             }
         }.attach()
+        binding.btnUpdate.setOnClickListener {
+            binding.tabLayout.getTabAt(0)?.select()
+            checkLocation()
+        }
+    }
+
+    private fun checkLocation(){
+        if (isLocationEnabled()){
+            getLocation()
+        } else {
+            DialogManager.locationSettingsDialog(requireContext(), object : DialogManager.Listener {
+                override fun onClick() {
+                    startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                }
+            })
+        }
+    }
+
+    private fun isLocationEnabled(): Boolean {
+        val locationManager = requireActivity().getSystemService(LOCATION_SERVICE) as LocationManager
+        return locationManager.isProviderEnabled(
+            LocationManager.GPS_PROVIDER) ||
+                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+    }
+
+    private fun getLocation(){
+        val locationRequest = LocationRequest.Builder(10000L)
+            .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+            .setMinUpdateIntervalMillis(5000L)
+            .setMaxUpdateDelayMillis(10000L)
+            .build()
+
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(p0: LocationResult) {
+                p0 ?: return
+                val location = p0.locations.firstOrNull() ?: return
+                requestWeatherData("${location.latitude},${location.longitude}")
+                fusedLocationClient.removeLocationUpdates(this)
+            }
+        }
+        if (ActivityCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
+        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
     }
 
     private fun permissionLauncher() {
@@ -121,6 +196,7 @@ class MainFragment : Fragment() {
                 day.getJSONArray("hour").toString(),
             )
             list.add(item)
+            model.liveDataDays.value = list
         }
         return list
     }
@@ -129,9 +205,9 @@ class MainFragment : Fragment() {
         model.liveDataCurrent.observe(viewLifecycleOwner) {
             tvDate.text = it.time
             tvCity.text = it.city
-            tvCurrentTemp.text = it.currentTemp
+            tvCurrentTemp.text = it.currentTemp.ifEmpty { "${it.maxTemp}°C / ${it.minTemp}°C" }
             tvCondition.text = it.condition
-            tvMaxMin.text = "${it.maxTemp}C / ${it.minTemp}C"
+            tvMaxMin.text = it.currentTemp ?: "${it.maxTemp}°C / ${it.minTemp}°C"
             Picasso.get().load("https:" + it.imageUrl).into(ivWeather)
         }
     }

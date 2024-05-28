@@ -39,7 +39,7 @@ class HoursFragment : Fragment() {
 
     private fun intiRecyclerView() = with(binding){
         rvHoursItems.layoutManager = LinearLayoutManager(requireContext())
-        adapter = WeatherAdapter()
+        adapter = WeatherAdapter(null)
         rvHoursItems.adapter = adapter
         adapter.submitList(listOf())
     }

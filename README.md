@@ -38,4 +38,7 @@ The project aims to familiarize with the Volley library and compare its pros and
 
 #**Screenshots**
 ### Home Screen
-![Home Screen](screenshots/imgMain.png)
+<p align="center">
+  <img src="screenshots/imgMain.png" alt="Home Screen" width="45%"/>
+  <img src="screenshots/imgDaysFragment.png" alt="Home Screen" width="45%"/>
+</p>
